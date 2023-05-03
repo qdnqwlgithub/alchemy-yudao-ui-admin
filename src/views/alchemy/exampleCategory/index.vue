@@ -29,14 +29,24 @@
         <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" :loading="exportLoading"
                    v-hasPermi="['alchemy:example-category:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-select v-model="language" placeholder="请选择" size="mini">
+          <el-option
+            v-for="languageOption in languageOptions"
+            :key="languageOption"
+            :label="languageOption"
+            :value="languageOption">
+          </el-option>
+        </el-select>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="list">
+    <el-table v-loading="loading" :data="realTable">
       <el-table-column label="案例分类ID" align="center" prop="id" />
-      <el-table-column label="案例分类名称" align="center" prop="name" />
-      <el-table-column label="显示顺序" align="center" prop="sort" />
+      <el-table-column label="案例分类名称" align="center" :prop="'name.'+language" />
+      <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template v-slot="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -58,12 +68,30 @@
     <!-- 对话框(添加 / 修改) -->
     <el-dialog :title="title" :visible.sync="open" width="500px" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="案例分类名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入案例分类名称" />
-        </el-form-item>
-        <el-form-item label="显示顺序" prop="sort">
-          <el-input v-model="form.sort" placeholder="请输入显示顺序" />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="语言" prop="name">
+              <el-tag type="danger">中文</el-tag>
+            </el-form-item>
+            <el-form-item label="案例分类名称" prop="name">
+              <el-input v-model="form.name.zh" placeholder="请输入案例分类名称" />
+            </el-form-item>
+            <el-form-item label="显示顺序" prop="sort">
+              <el-input v-model="form.sort.zh" placeholder="请输入显示顺序" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="语言" prop="name">
+              <el-tag>英文</el-tag>
+            </el-form-item>
+            <el-form-item label="案例分类名称" prop="name">
+              <el-input v-model="form.name.en" placeholder="请输入案例分类名称" />
+            </el-form-item>
+            <el-form-item label="显示顺序" prop="sort">
+              <el-input v-model="form.sort.en" placeholder="请输入显示顺序" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -75,19 +103,23 @@
 
 <script>
 import { createExampleCategory, updateExampleCategory, deleteExampleCategory, getExampleCategory, getExampleCategoryPage, exportExampleCategoryExcel } from "@/api/alchemy/exampleCategory";
+import mixin from '@/mixin';
+import {convert2Real,convert2Table} from "@/utils/language";
 
 export default {
   name: "ExampleCategory",
+  mixins: [mixin],
   components: {
   },
   data() {
     return {
+      i18nField:['name','sort'],
       // 遮罩层
       loading: true,
       // 导出遮罩层
       exportLoading: false,
       // 显示搜索条件
-      showSearch: true,
+      showSearch: false,
       // 总条数
       total: 0,
       // 案例分类列表
@@ -113,7 +145,8 @@ export default {
       }
     };
   },
-  created() {
+  beforeMount() {
+    this.reset();
     this.getList();
   },
   methods: {
@@ -136,8 +169,8 @@ export default {
     reset() {
       this.form = {
         id: undefined,
-        name: undefined,
-        sort: undefined,
+        name: this.createLanguageStringParameter(),
+        sort: this.createLanguageNumberParameter(),
       };
       this.resetForm("form");
     },
@@ -162,7 +195,7 @@ export default {
       this.reset();
       const id = row.id;
       getExampleCategory(id).then(response => {
-        this.form = response.data;
+        this.form = convert2Table(response.data,this.i18nField);
         this.open = true;
         this.title = "修改案例分类";
       });
@@ -175,7 +208,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExampleCategory(this.form).then(response => {
+          updateExampleCategory(convert2Real(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -183,7 +216,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExampleCategory(this.form).then(response => {
+        createExampleCategory(convert2Real(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -213,6 +246,13 @@ export default {
           this.$download.excel(response, '案例分类.xls');
           this.exportLoading = false;
         }).catch(() => {});
+    }
+  },
+  computed:{
+    realTable(){
+      return this.list.map(item=>{
+        return convert2Table(item, this.i18nField)
+      })
     }
   }
 };

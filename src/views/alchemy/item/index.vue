@@ -9,10 +9,8 @@
       <el-form-item label="元素简介" prop="intro">
         <el-input v-model="queryParams.intro" placeholder="请输入元素简介" clearable @keyup.enter.native="handleQuery"/>
       </el-form-item>
-      <el-form-item label="所属分类id" prop="categoryId">
-<!--        <el-input v-model="queryParams.categoryId" placeholder="请输入所属分类id" clearable @keyup.enter.native="handleQuery"/>-->
-        <treeselect v-model="queryParams.categoryId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"
-                    placeholder="选择上级菜单"/>
+      <el-form-item label="所属分类" prop="categoryId">
+<!--        <CategorySelect v-model="queryParams.categoryId"></CategorySelect>-->
       </el-form-item>
       <el-form-item label="浏览量" prop="viewNum">
         <el-input v-model="queryParams.viewNum" placeholder="请输入浏览量" clearable @keyup.enter.native="handleQuery"/>
@@ -82,10 +80,11 @@
     <!-- 对话框(添加 / 修改) -->
     <el-dialog :title="title" :visible.sync="open" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="所属分类id" prop="categoryId">
+        <el-form-item label="所属分类" prop="categoryId">
 <!--          <el-input v-model="form.categoryId" placeholder="请输入所属分类id" />-->
-          <treeselect v-model="form.categoryId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"
-                      placeholder="选择上级菜单"/>
+<!--          <treeselect v-model="form.categoryId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"-->
+<!--                      placeholder="选择上级菜单"/>-->
+          <category-cascader v-model="form.categoryId"></category-cascader>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -154,14 +153,15 @@
 </template>
 
 <script>
+import CategoryCascader from '@/views/alchemy/category/category-cascader.vue'
 import { createItem, updateItem, deleteItem, getItem, getItemPage, exportItemExcel } from "@/api/alchemy/item";
 import {getCategoryPage} from "@/api/alchemy/category";
 import ImageUpload from '@/components/ImageUpload';
 import FileUpload from '@/components/FileUpload';
-import mixin from '@/mixin';
 import _ from "lodash";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
+import mixin from '@/mixin';
 import {convert2Real,convert2Table} from "@/utils/language";
 
 
@@ -173,7 +173,9 @@ export default {
   components: {
     ImageUpload,
     FileUpload,
-    Treeselect
+    Treeselect,
+    // CategorySelect
+    CategoryCascader
   },
   data() {
     return {
@@ -222,32 +224,11 @@ export default {
       }
     };
   },
-  created() {
-    this.getTreeselect()
+  beforeMount() {
     this.reset()
     this.getList();
   },
   methods: {
-    /** 转换菜单数据结构 */
-    normalizer(node) {
-      if (node.children && !node.children.length) {
-        delete node.children;
-      }
-      return {
-        id: node.id,
-        label: node.name,
-        children: node.children
-      };
-    },
-    /** 查询菜单下拉树结构 */
-    getTreeselect() {
-      getCategoryPage({pageSize: 100}).then(response => {
-        this.parentCategoryOptions = [];
-        const category = { id: 0, name: '主类目', children: [] };
-        category.children = this.handleTree(response.data.list, "id");
-        this.parentCategoryOptions.push(category);
-      });
-    },
     /** 查询列表 */
     getList() {
       this.loading = true;
@@ -313,7 +294,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateItem(convert2Real(this.form)).then(response => {
+          updateItem(convert2Real(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -321,7 +302,7 @@ export default {
           return;
         }
         // 添加的提交
-        createItem(convert2Real(this.form)).then(response => {
+        createItem(convert2Real(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -359,8 +340,6 @@ export default {
         return convert2Table(item, this.i18nField)
       })
     },
-
   }
-
 };
 </script>

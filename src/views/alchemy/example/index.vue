@@ -3,11 +3,11 @@
 
     <!-- 搜索工作栏 -->
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+      <el-form-item label="所属分类" prop="categoryId">
+        <ExampleCategorySelect v-model="queryParams.categoryId"></ExampleCategorySelect>
+      </el-form-item>
       <el-form-item label="案例名称" prop="name">
         <el-input v-model="queryParams.name" placeholder="请输入案例名称" clearable @keyup.enter.native="handleQuery"/>
-      </el-form-item>
-      <el-form-item label="所属分类" prop="categoryId">
-        <el-input v-model="queryParams.categoryId" placeholder="请输入所属分类" clearable @keyup.enter.native="handleQuery"/>
       </el-form-item>
       <el-form-item label="显示顺序" prop="sort">
         <el-input v-model="queryParams.sort" placeholder="请输入显示顺序" clearable @keyup.enter.native="handleQuery"/>
@@ -34,20 +34,30 @@
         <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" :loading="exportLoading"
                    v-hasPermi="['alchemy:example:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-select v-model="language" placeholder="请选择" size="mini">
+          <el-option
+            v-for="languageOption in languageOptions"
+            :key="languageOption"
+            :label="languageOption"
+            :value="languageOption">
+          </el-option>
+        </el-select>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="list">
+    <el-table v-loading="loading" :data="realTable">
       <el-table-column label="案例ID" align="center" prop="id" />
-      <el-table-column label="案例名称" align="center" prop="name" />
+      <el-table-column label="案例名称" align="center" :prop="'name.'+language" />
       <el-table-column label="所属分类" align="center" prop="categoryId" />
-      <el-table-column label="封面图" align="center" prop="avatar" />
-      <el-table-column label="轮播图地址" align="center" prop="carousel" />
-      <el-table-column label="案例详情" align="center" prop="content" />
-      <el-table-column label="显示顺序" align="center" prop="sort" />
-      <el-table-column label="是否展示到首页" align="center" prop="indexFlag" />
-      <el-table-column label="index排序" align="center" prop="indexSort" />
+      <el-table-column label="封面图" align="center" :prop="'avatar.'+language" />
+      <el-table-column label="轮播图地址" align="center" :prop="'carousel.'+language" />
+      <el-table-column label="案例详情" align="center" :prop="'content.'+language" />
+      <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
+      <el-table-column label="是否展示到首页" align="center" :prop="'indexFlag.'+language" />
+      <el-table-column label="index排序" align="center" :prop="'indexSort.'+language" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template v-slot="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -69,30 +79,64 @@
     <!-- 对话框(添加 / 修改) -->
     <el-dialog :title="title" :visible.sync="open" width="500px" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="案例名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入案例名称" />
-        </el-form-item>
         <el-form-item label="所属分类" prop="categoryId">
           <el-input v-model="form.categoryId" placeholder="请输入所属分类" />
         </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="语言" prop="name">
+              <el-tag>英文</el-tag>
+            </el-form-item>
+            <el-form-item label="案例名称" prop="name">
+          <el-input v-model="form.name.zh" placeholder="请输入案例名称" />
+        </el-form-item>
         <el-form-item label="封面图">
-          <imageUpload v-model="form.avatar"/>
+          <imageUpload v-model="form.avatar.zh"/>
         </el-form-item>
         <el-form-item label="轮播图地址">
-          <imageUpload v-model="form.carousel"/>
+          <imageUpload v-model="form.carousel.zh"/>
         </el-form-item>
         <el-form-item label="案例详情">
-          <imageUpload v-model="form.content"/>
+          <imageUpload v-model="form.content.zh"/>
         </el-form-item>
         <el-form-item label="显示顺序" prop="sort">
-          <el-input v-model="form.sort" placeholder="请输入显示顺序" />
+          <el-input v-model="form.sort.zh" placeholder="请输入显示顺序" />
         </el-form-item>
         <el-form-item label="是否展示到首页" prop="indexFlag">
-          <el-input v-model="form.indexFlag" placeholder="请输入是否展示到首页" />
+          <el-input v-model="form.indexFlag.zh" placeholder="请输入是否展示到首页" />
         </el-form-item>
         <el-form-item label="index排序" prop="indexSort">
-          <el-input v-model="form.indexSort" placeholder="请输入index排序" />
+          <el-input v-model="form.indexSort.zh" placeholder="请输入index排序" />
         </el-form-item>
+            </el-col>
+            <el-col :span="12">
+            <el-form-item label="语言" prop="name">
+              <el-tag type="danger">中文</el-tag>
+            </el-form-item>
+            <el-form-item label="案例名称" prop="name">
+          <el-input v-model="form.name.en" placeholder="请输入案例名称" />
+        </el-form-item>
+        <el-form-item label="封面图">
+          <imageUpload v-model="form.avatar.en"/>
+        </el-form-item>
+        <el-form-item label="轮播图地址">
+          <imageUpload v-model="form.carousel.en"/>
+        </el-form-item>
+        <el-form-item label="案例详情">
+          <imageUpload v-model="form.content.en"/>
+        </el-form-item>
+        <el-form-item label="显示顺序" prop="sort">
+          <el-input v-model="form.sort.en" placeholder="请输入显示顺序" />
+        </el-form-item>
+        <el-form-item label="是否展示到首页" prop="indexFlag">
+          <el-input v-model="form.indexFlag.en" placeholder="请输入是否展示到首页" />
+        </el-form-item>
+        <el-form-item label="index排序" prop="indexSort">
+          <el-input v-model="form.indexSort.en" placeholder="请输入index排序" />
+        </el-form-item>
+            </el-col>
+          </el-row>
+
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -105,20 +149,24 @@
 <script>
 import { createExample, updateExample, deleteExample, getExample, getExamplePage, exportExampleExcel } from "@/api/alchemy/example";
 import ImageUpload from '@/components/ImageUpload';
+import mixin from '@/mixin';
+import {convert2Real,convert2Table} from "@/utils/language";
 
 export default {
   name: "Example",
+  mixins: [mixin],
   components: {
     ImageUpload
   },
   data() {
     return {
+      i18nField:['name','avatar','carousel','content','sort','indexFlag','indexSort'],
       // 遮罩层
       loading: true,
       // 导出遮罩层
       exportLoading: false,
       // 显示搜索条件
-      showSearch: true,
+      showSearch: false,
       // 总条数
       total: 0,
       // 案例列表
@@ -153,7 +201,8 @@ export default {
       }
     };
   },
-  created() {
+  beforeMount() {
+    this.reset();
     this.getList();
   },
   methods: {
@@ -176,14 +225,14 @@ export default {
     reset() {
       this.form = {
         id: undefined,
-        name: undefined,
+        name: this.createLanguageStringParameter(),
         categoryId: undefined,
-        avatar: undefined,
-        carousel: undefined,
-        content: undefined,
-        sort: undefined,
-        indexFlag: undefined,
-        indexSort: undefined,
+        avatar: this.createLanguageStringParameter(),
+        carousel: this.createLanguageStringParameter(),
+        content: this.createLanguageStringParameter(),
+        sort: this.createLanguageNumberParameter(),
+        indexFlag: this.createLanguageNumberParameter(),
+        indexSort: this.createLanguageNumberParameter(),
       };
       this.resetForm("form");
     },
@@ -221,7 +270,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExample(this.form).then(response => {
+          updateExample(convert2Real(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -229,7 +278,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExample(this.form).then(response => {
+        createExample(convert2Real(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -260,6 +309,16 @@ export default {
           this.exportLoading = false;
         }).catch(() => {});
     }
+  },
+  computed:{
+    realTable(){
+      return this.list.map(item=>{
+        return convert2Table(item, this.i18nField)
+      })
+    }
+  },
+  components:{
+    ExampleCategorySelect
   }
 };
 </script>
