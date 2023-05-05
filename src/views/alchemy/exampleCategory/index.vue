@@ -104,7 +104,7 @@
 <script>
 import { createExampleCategory, updateExampleCategory, deleteExampleCategory, getExampleCategory, getExampleCategoryPage, exportExampleCategoryExcel } from "@/api/alchemy/exampleCategory";
 import mixin from '@/mixin';
-import {convert2Real,convert2Table} from "@/utils/language";
+import {convert2Entity,convert2Vo} from "@/utils/language";
 
 export default {
   name: "ExampleCategory",
@@ -195,7 +195,7 @@ export default {
       this.reset();
       const id = row.id;
       getExampleCategory(id).then(response => {
-        this.form = convert2Table(response.data,this.i18nField);
+        this.form = convert2Vo(response.data,this.i18nField);
         this.open = true;
         this.title = "修改案例分类";
       });
@@ -208,7 +208,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExampleCategory(convert2Real(this.form,this.i18nField)).then(response => {
+          updateExampleCategory(convert2Entity(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -216,7 +216,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExampleCategory(convert2Real(this.form,this.i18nField)).then(response => {
+        createExampleCategory(convert2Entity(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -251,7 +251,7 @@ export default {
   computed:{
     realTable(){
       return this.list.map(item=>{
-        return convert2Table(item, this.i18nField)
+        return convert2Vo(item, this.i18nField)
       })
     }
   }

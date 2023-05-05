@@ -64,7 +64,11 @@
     <el-table v-loading="loading" :data="realTable">
       <el-table-column label="小程序配置ID" align="center" prop="id" />
       <el-table-column label="小程序顶部logo" align="center" :prop="'headImg.'+language" />
-      <el-table-column label="轮播图地址" align="center" :prop="'carousel.'+language" />
+      <el-table-column label="轮播图地址" align="center" >
+        <template v-slot="scope">
+          <image-preview :src="scope.row.carousel[language]"></image-preview>
+        </template>
+      </el-table-column>
       <el-table-column label="index页面底部图片" align="center" :prop="'indexBottomImg.'+language" />
       <el-table-column label="公司名" align="center" :prop="'companyName.'+language" />
       <el-table-column label="公司地址" align="center" :prop="'address.'+language" />
@@ -98,7 +102,9 @@
               <el-tag type="danger">中文</el-tag>
             </el-form-item>
             <el-form-item label="小程序顶部logo" prop="headImg">
-              <el-input v-model="form.headImg.zh" placeholder="请输入小程序顶部logo" />
+<!--              <el-input v-model="form.headImg.zh" placeholder="请输入小程序顶部logo" />-->
+<!--              <image-upload v-model=""></image-upload>-->
+              <image-upload v-model="form.headImg.zh" :limit="1"/>
             </el-form-item>
             <el-form-item label="轮播图地址" prop="carousel">
               <el-input v-model="form.carousel.zh" placeholder="请输入轮播图地址" />
@@ -127,7 +133,8 @@
             <el-tag>英文</el-tag>
           </el-form-item>
             <el-form-item label="小程序顶部logo" prop="headImg">
-              <el-input v-model="form.headImg.en" placeholder="请输入小程序顶部logo" />
+<!--              <el-input v-model="form.headImg.en" placeholder="请输入小程序顶部logo" />-->
+              <image-upload v-model="form.headImg.en" :limit="1"/>
             </el-form-item>
             <el-form-item label="轮播图地址" prop="carousel">
               <el-input v-model="form.carousel.en" placeholder="请输入轮播图地址" />
@@ -162,14 +169,18 @@
 </template>
 
 <script>
+import ImageUpload from '@/components/ImageUpload/index.vue'
+import ImagePreview from '@/components/ImagePreview/index.vue'
 import { createMiniAppConfig, updateMiniAppConfig, deleteMiniAppConfig, getMiniAppConfig, getMiniAppConfigPage, exportMiniAppConfigExcel } from "@/api/alchemy/miniAppConfig";
 import mixin from '@/mixin'
-import {convert2Real, convert2Table} from "@/utils/language";
+import {convert2Entity, convert2Vo} from "@/utils/language";
 
 export default {
   name: "MiniAppConfig",
   mixins: [mixin],
   components: {
+    ImagePreview,
+    ImageUpload
   },
   data() {
     return {
@@ -293,7 +304,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateMiniAppConfig(convert2Real(this.form,this.i18nField)).then(response => {
+          updateMiniAppConfig(convert2Entity(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -301,7 +312,7 @@ export default {
           return;
         }
         // 添加的提交
-        createMiniAppConfig(convert2Real(this.form,this.i18nField)).then(response => {
+        createMiniAppConfig(convert2Entity(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -336,7 +347,7 @@ export default {
   computed:{
     realTable(){
       return this.list.map(item=>{
-        return convert2Table(item, this.i18nField)
+        return convert2Vo(item, this.i18nField)
       })
     },
   }

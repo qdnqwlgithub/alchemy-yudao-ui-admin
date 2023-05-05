@@ -80,7 +80,8 @@
     <el-dialog :title="title" :visible.sync="open" width="500px" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="所属分类" prop="categoryId">
-          <el-input v-model="form.categoryId" placeholder="请输入所属分类" />
+<!--          <el-input v-model="form.categoryId" placeholder="请输入所属分类" />-->
+          <example-category-cascader v-model="form.categoryId"></example-category-cascader>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -150,13 +151,15 @@
 import { createExample, updateExample, deleteExample, getExample, getExamplePage, exportExampleExcel } from "@/api/alchemy/example";
 import ImageUpload from '@/components/ImageUpload';
 import mixin from '@/mixin';
-import {convert2Real,convert2Table} from "@/utils/language";
+import {convert2Entity,convert2Vo} from "@/utils/language";
+import ExampleCategoryCascader from '@/views/alchemy/exampleCategory/example-category-cascader.vue'
 
 export default {
   name: "Example",
   mixins: [mixin],
   components: {
-    ImageUpload
+    ImageUpload,
+    ExampleCategoryCascader
   },
   data() {
     return {
@@ -270,7 +273,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExample(convert2Real(this.form,this.i18nField)).then(response => {
+          updateExample(convert2Entity(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -278,7 +281,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExample(convert2Real(this.form,this.i18nField)).then(response => {
+        createExample(convert2Entity(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -313,7 +316,7 @@ export default {
   computed:{
     realTable(){
       return this.list.map(item=>{
-        return convert2Table(item, this.i18nField)
+        return convert2Vo(item, this.i18nField)
       })
     }
   },

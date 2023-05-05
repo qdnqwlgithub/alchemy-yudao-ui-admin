@@ -2,18 +2,22 @@
     <el-cascader
       style="width: 100%"
       v-model="categoryId"
-      :props="{label: 'name',value: 'id',expandTrigger: 'hover',emitPath: false  }"
+      :props="{label: 'name.zh' ,value: 'id',expandTrigger: 'hover',emitPath: false  }"
       :options="options">
+      <template slot-scope="{ node, data }">
+        <span>{{ data.label }}</span>
+        <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
+      </template>
     </el-cascader>
 </template>
 
 <script>
 import { getCategoryPage } from "@/api/alchemy/category";
-import _ from "lodash"; 1
+import _ from "lodash";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import mixin from '@/mixin';
-import { convert2Real, convert2Table } from "@/utils/language";
+import { convert2Entity, convert2Vo } from "@/utils/language";
 
 
 
@@ -43,14 +47,15 @@ export default {
       categoryId: undefined
     }
   },
-  beforeMount() {
+  created() {
     this.initOptions();
   },
   methods: {
     /** 查询菜单下拉树结构 */
     initOptions() {
       getCategoryPage({ pageSize: 100 }).then(response => {
-        this.options = this.handleTree(response.data.list, "id");
+        this.options = this.handleTree(response.data.list, "id","parentId");
+        console.log(this.options)
       });
     },
   }

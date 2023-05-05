@@ -10,7 +10,7 @@
         <el-input v-model="queryParams.intro" placeholder="请输入元素简介" clearable @keyup.enter.native="handleQuery"/>
       </el-form-item>
       <el-form-item label="所属分类" prop="categoryId">
-<!--        <CategorySelect v-model="queryParams.categoryId"></CategorySelect>-->
+        <CategorySelect v-model="queryParams.categoryId"></CategorySelect>
       </el-form-item>
       <el-form-item label="浏览量" prop="viewNum">
         <el-input v-model="queryParams.viewNum" placeholder="请输入浏览量" clearable @keyup.enter.native="handleQuery"/>
@@ -53,9 +53,21 @@
       <el-table-column label="元素名称" align="center" :prop="'name.'+language" />
       <el-table-column label="元素简介" align="center" :prop="'intro.'+language" />
 <!--      <el-table-column label="所属分类id" align="center" prop="categoryId" />-->
-      <el-table-column label="头像地址" align="center" :prop="'avatar.'+language" />
-      <el-table-column label="轮播图地址" align="center" :prop="'carousel.'+language" />
-      <el-table-column label="元素详情" align="center" :prop="'content.'+language" />
+      <el-table-column label="头像地址" align="center" :prop="'avatar.'+language">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.avatar[language]"></image-preview>
+        </template>
+      </el-table-column>
+      <el-table-column label="轮播图地址" align="center">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.carousel[language]"></image-preview>
+        </template>
+      </el-table-column>
+      <el-table-column label="元素详情" align="center" :prop="'content.'+language">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.content[language]"></image-preview>
+        </template>
+      </el-table-column>
       <el-table-column label="产品手册" align="center" :prop="'doc.'+language" />
       <el-table-column label="浏览量" align="center" prop="viewNum" />
       <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
@@ -84,7 +96,7 @@
 <!--          <el-input v-model="form.categoryId" placeholder="请输入所属分类id" />-->
 <!--          <treeselect v-model="form.categoryId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"-->
 <!--                      placeholder="选择上级菜单"/>-->
-          <category-cascader v-model="form.categoryId"></category-cascader>
+<!--          <category-cascader v-model="form.categoryId"></category-cascader>-->
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -98,7 +110,7 @@
               <el-input v-model="form.intro.zh" placeholder="请输入元素简介" />
             </el-form-item>
             <el-form-item label="头像地址">
-              <imageUpload v-model="form.avatar.zh"/>
+              <imageUpload v-model="form.avatar.zh" :limit="1" />
             </el-form-item>
             <el-form-item label="轮播图地址">
               <imageUpload v-model="form.carousel.zh"/>
@@ -124,7 +136,7 @@
               <el-input v-model="form.intro.en" placeholder="请输入元素简介" />
             </el-form-item>
             <el-form-item label="头像地址">
-              <imageUpload v-model="form.avatar.en"/>
+              <imageUpload v-model="form.avatar.en" :limit="1" />
             </el-form-item>
             <el-form-item label="轮播图地址">
               <imageUpload v-model="form.carousel.en"/>
@@ -162,7 +174,8 @@ import _ from "lodash";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import mixin from '@/mixin';
-import {convert2Real,convert2Table} from "@/utils/language";
+import {convert2Entity,convert2Vo} from "@/utils/language";
+import ImagePreview from '@/components/ImagePreview/index.vue'
 
 
 
@@ -171,6 +184,7 @@ export default {
   name: "Item",
   mixins: [mixin],
   components: {
+    ImagePreview,
     ImageUpload,
     FileUpload,
     Treeselect,
@@ -281,7 +295,7 @@ export default {
       this.reset();
       const id = row.id;
       getItem(id).then(response => {
-        this.form = convert2Table(response.data,this.i18nField);
+        this.form = convert2Vo(response.data,this.i18nField);
         this.open = true;
         this.title = "修改元素";
       });
@@ -294,7 +308,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateItem(convert2Real(this.form,this.i18nField)).then(response => {
+          updateItem(convert2Entity(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -302,7 +316,7 @@ export default {
           return;
         }
         // 添加的提交
-        createItem(convert2Real(this.form,this.i18nField)).then(response => {
+        createItem(convert2Entity(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -337,7 +351,7 @@ export default {
   computed:{
     realTable(){
       return this.list.map(item=>{
-        return convert2Table(item, this.i18nField)
+        return convert2Vo(item, this.i18nField)
       })
     },
   }

@@ -110,7 +110,7 @@
 import { createCooperativePartner, updateCooperativePartner, deleteCooperativePartner, getCooperativePartner, getCooperativePartnerPage, exportCooperativePartnerExcel } from "@/api/alchemy/cooperativePartner";
 import ImageUpload from '@/components/ImageUpload';
 import mixin from '@/mixin';
-import { convert2Real, convert2Table } from "@/utils/language";
+import { convert2Entity, convert2Vo } from "@/utils/language";
 
 export default {
   name: "CooperativePartner",
@@ -205,7 +205,7 @@ export default {
       this.reset();
       const id = row.id;
       getCooperativePartner(id).then(response => {
-        this.form = convert2Table(response.data,this.i18nField);
+        this.form = convert2Vo(response.data,this.i18nField);
         this.open = true;
         this.title = "修改合作伙伴";
       });
@@ -218,7 +218,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateCooperativePartner(convert2Real(this.form,this.i18nField)).then(response => {
+          updateCooperativePartner(convert2Entity(this.form,this.i18nField)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -226,7 +226,7 @@ export default {
           return;
         }
         // 添加的提交
-        createCooperativePartner(convert2Real(this.form,this.i18nField)).then(response => {
+        createCooperativePartner(convert2Entity(this.form,this.i18nField)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -261,7 +261,7 @@ export default {
   computed: {
     realTable(){
       return this.list.map(item=>{
-        return convert2Table(item, this.i18nField)
+        return convert2Vo(item, this.i18nField)
       })
     }
   }

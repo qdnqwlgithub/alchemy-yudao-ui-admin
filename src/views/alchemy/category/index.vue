@@ -51,11 +51,23 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable"  row-key="id">
+    <el-table v-loading="loading" :data="list"  row-key="id">
       <el-table-column label="分类id" align="center" prop="id" />
-      <el-table-column label="分类名称" align="center" :prop="'name.'+language" />
-      <el-table-column label="头像地址" align="center" :prop="'avatar.'+language" />
-      <el-table-column label="浏览量" align="center" prop="viewNum" />
+      <el-table-column label="分类名称" align="center" prop="name">
+        <template v-slot="scope">
+          {{scope.row.name[language]}}
+        </template>
+      </el-table-column>
+      <el-table-column label="头像地址" align="center" prop="avatar">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.avatar[language]"></image-preview>
+        </template>
+      </el-table-column>
+      <el-table-column label="浏览量" align="center" prop="viewNum">
+        <template v-slot="scope">
+          {{scope.row.viewNum[language]}}
+        </template>
+      </el-table-column>
       <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template v-slot="scope">
@@ -73,8 +85,7 @@
     <el-dialog :title="title" :visible.sync="open" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="父分类id" prop="parentId">
-          <treeselect v-model="form.parentId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"
-                      placeholder="选择上级菜单"/>
+          <CategoryCascader v-model="form.parentId"></CategoryCascader>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -121,20 +132,22 @@ import mixin from '@/mixin';
 import ImageUpload from "@/components/ImageUpload/index.vue";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
-import _ from 'lodash'
-import {convert2Real, convert2Table} from "@/utils/language";
+import CategoryCascader from '@/views/alchemy/category/category-cascader.vue'
+import ImagePreview from '@/components/ImagePreview/index.vue'
 
 
 export default {
   name: "Category",
   mixins: [mixin],
   components: {
+    ImagePreview,
     ImageUpload,
-    Treeselect
+    Treeselect,
+    CategoryCascader
   },
   data() {
     return {
-      i18nFiled:['name','intro','avatar','carousel','content','doc','sort'],
+      i18field:['name','intro','avatar','carousel','content','doc','sort'],
       parentCategoryOptions: [],
       // 遮罩层
       loading: true,
@@ -162,74 +175,24 @@ export default {
         createTime: [],
       },
       // 表单参数
-      form: {
-        name: {
-          zh: '',
-          en: ''
-        },
-        avatar: {
-          zh: '',
-          en: ''
-        },
-        viewNum:  0,
-        sort:  {
-          zh: 0,
-          en: 0
-        },
-      },
+      form: {},
       // 表单校验
       rules: {
         viewNum: [{ required: true, message: "浏览量不能为空", trigger: "blur" }],
       }
     };
   },
-  created() {
+  beforeMount() {
+    this.reset();
     this.getList();
   },
-  computed:{
-    realForm(){
-      let realForm = _.cloneDeep(this.form);
-      realForm.name=JSON.stringify(realForm.name);
-      realForm.avatar=JSON.stringify(realForm.avatar);
-      realForm.sort=JSON.stringify(realForm.sort);
-      return realForm;
-    },
-    realTable(){
-      let map = this.list.map(item=>{
-        return convert2Table(item, this.i18nFiled)
-      });
-      const category = { id: 0, name: '主类目', children: [] };
-      category.children = this.handleTree(map, "id");
-      return category.children;
-    }
-  },
   methods: {
-    /** 查询菜单下拉树结构 */
-    getTreeselect() {
-      getCategoryPage({pageSize: 100}).then(response => {
-        this.parentCategoryOptions = [];
-        const category = { id: 0, name: '主类目', children: [] };
-        category.children = this.handleTree(response.data.list, "id");
-        this.parentCategoryOptions.push(category);
-      });
-    },
-    /** 转换菜单数据结构 */
-    normalizer(node) {
-      if (node.children && !node.children.length) {
-        delete node.children;
-      }
-      return {
-        id: node.id,
-        label: node.name,
-        children: node.children
-      };
-    },
     /** 查询列表 */
     getList() {
       this.loading = true;
       // 执行查询
-      getCategoryPage(this.queryParams).then(response => {
-        this.list = response.data.list;
+      getCategoryPage({pageSize: 99}).then(response => {
+        this.list = this.handleTree(response.data.list, "id","parentId");
         this.total = response.data.total;
         this.loading = false;
       });
@@ -243,20 +206,11 @@ export default {
     reset() {
       this.form = {
         id: undefined,
-        name: {
-          zh: '',
-          en: ''
-        },
-        avatar: {
-          zh: '',
-          en: ''
-        },
+        name: this.createLanguageStringParameter(),
+        avatar: this.createLanguageStringParameter(),
         parentId: undefined,
-        viewNum:  0,
-        sort:  {
-          zh: 0,
-          en: 0
-        },
+        viewNum:  this.createLanguageNumberParameter(),
+        sort:  this.createLanguageNumberParameter(),
       };
       this.resetForm("form");
     },
@@ -273,31 +227,28 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
-      this.getTreeselect();
       this.open = true;
       this.title = "添加分类";
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
-      this.getTreeselect();
       const id = row.id;
       getCategory(id).then(response => {
-        this.form = convert2Table(response.data,this.i18nFiled);
+        this.form = response.data;
         this.open = true;
         this.title = "修改分类";
       });
     },
     /** 提交按钮 */
     submitForm() {
-
       this.$refs["form"].validate(valid => {
         if (!valid) {
           return;
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateCategory(this.form).then(response => {
+          updateCategory(convert2Entity(this.form,this.i18field)).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -305,7 +256,7 @@ export default {
           return;
         }
         // 添加的提交
-        createCategory(this.realForm).then(response => {
+        createCategory(convert2Entity(this.form,this.i18field)).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();

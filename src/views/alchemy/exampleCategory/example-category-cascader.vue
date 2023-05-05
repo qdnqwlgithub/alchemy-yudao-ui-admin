@@ -8,12 +8,12 @@
 </template>
 
 <script>
-import { getCategoryPage } from "@/api/alchemy/category";
-import _ from "lodash"; 1
+import {getExampleCategoryPage} from '@/api/alchemy/exampleCategory'
+import _ from "lodash";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import mixin from '@/mixin';
-import { convert2Real, convert2Table } from "@/utils/language";
+import { convert2Entity, convert2Vo } from "@/utils/language";
 
 
 
@@ -49,7 +49,7 @@ export default {
   methods: {
     /** 查询菜单下拉树结构 */
     initOptions() {
-      getCategoryPage({ pageSize: 100 }).then(response => {
+      getExampleCategoryPage({ pageSize: 100 }).then(response => {
         this.options = this.handleTree(response.data.list, "id");
       });
     },
