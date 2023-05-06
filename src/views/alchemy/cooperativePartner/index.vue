@@ -41,7 +41,7 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable">
+    <el-table v-loading="loading" :data="list">
       <el-table-column label="合作伙伴ID" align="center" prop="id" />
       <el-table-column label="合作伙伴名称" align="center" :prop="'name.' + language" />
       <el-table-column label="封面图" align="center" :prop="'avatar.' + language" />
@@ -120,7 +120,6 @@ export default {
   },
   data() {
     return {
-      i18nField: ['name', 'avatar', 'sort'],
       // 遮罩层
       loading: true,
       // 导出遮罩层
@@ -205,7 +204,7 @@ export default {
       this.reset();
       const id = row.id;
       getCooperativePartner(id).then(response => {
-        this.form = convert2Vo(response.data,this.i18nField);
+        this.form = response.data;
         this.open = true;
         this.title = "修改合作伙伴";
       });
@@ -218,7 +217,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateCooperativePartner(convert2Entity(this.form,this.i18nField)).then(response => {
+          updateCooperativePartner(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -226,7 +225,7 @@ export default {
           return;
         }
         // 添加的提交
-        createCooperativePartner(convert2Entity(this.form,this.i18nField)).then(response => {
+        createCooperativePartner(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -256,13 +255,6 @@ export default {
         this.$download.excel(response, '合作伙伴.xls');
         this.exportLoading = false;
       }).catch(() => { });
-    }
-  },
-  computed: {
-    realTable(){
-      return this.list.map(item=>{
-        return convert2Vo(item, this.i18nField)
-      })
     }
   }
 };

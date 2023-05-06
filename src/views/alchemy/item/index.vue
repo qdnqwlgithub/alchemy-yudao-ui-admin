@@ -10,14 +10,14 @@
         <el-input v-model="queryParams.intro" placeholder="请输入元素简介" clearable @keyup.enter.native="handleQuery"/>
       </el-form-item>
       <el-form-item label="所属分类" prop="categoryId">
-        <CategorySelect v-model="queryParams.categoryId"></CategorySelect>
+        <CategoryTreeSelect ref="categoryTreeSelectOfQuery" v-model="queryParams.categoryId"></CategoryTreeSelect>
       </el-form-item>
-      <el-form-item label="浏览量" prop="viewNum">
-        <el-input v-model="queryParams.viewNum" placeholder="请输入浏览量" clearable @keyup.enter.native="handleQuery"/>
-      </el-form-item>
-      <el-form-item label="显示顺序" prop="sort">
-        <el-input v-model="queryParams.sort" placeholder="请输入显示顺序" clearable @keyup.enter.native="handleQuery"/>
-      </el-form-item>
+<!--      <el-form-item label="浏览量" prop="viewNum">-->
+<!--        <el-input v-model="queryParams.viewNum" placeholder="请输入浏览量" clearable @keyup.enter.native="handleQuery"/>-->
+<!--      </el-form-item>-->
+<!--      <el-form-item label="显示顺序" prop="sort">-->
+<!--        <el-input v-model="queryParams.sort" placeholder="请输入显示顺序" clearable @keyup.enter.native="handleQuery"/>-->
+<!--      </el-form-item>-->
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
@@ -48,7 +48,7 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable">
+    <el-table v-loading="loading" :data="list">
       <el-table-column label="元素ID" align="center" prop="id" />
       <el-table-column label="元素名称" align="center" :prop="'name.'+language" />
       <el-table-column label="元素简介" align="center" :prop="'intro.'+language" />
@@ -69,7 +69,7 @@
         </template>
       </el-table-column>
       <el-table-column label="产品手册" align="center" :prop="'doc.'+language" />
-      <el-table-column label="浏览量" align="center" prop="viewNum" />
+      <el-table-column label="浏览量" align="center" :prop="'viewNum.'+language" />
       <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template v-slot="scope">
@@ -93,10 +93,7 @@
     <el-dialog :title="title" :visible.sync="open" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="所属分类" prop="categoryId">
-<!--          <el-input v-model="form.categoryId" placeholder="请输入所属分类id" />-->
-<!--          <treeselect v-model="form.categoryId" :options="parentCategoryOptions" :normalizer="normalizer" :show-count="true"-->
-<!--                      placeholder="选择上级菜单"/>-->
-<!--          <category-cascader v-model="form.categoryId"></category-cascader>-->
+          <CategoryTreeSelect ref="categoryTreeSelectOfForm" v-model="form.categoryId"></CategoryTreeSelect>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -124,6 +121,9 @@
             <el-form-item label="显示顺序" prop="sort">
               <el-input v-model="form.sort.zh" placeholder="请输入显示顺序" />
             </el-form-item>
+            <el-form-item label="浏览量" prop="viewNum">
+              <el-input v-model="form.viewNum.zh" placeholder="请输入浏览量" />
+            </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="语言" prop="name">
@@ -150,11 +150,11 @@
             <el-form-item label="显示顺序" prop="sort">
               <el-input v-model="form.sort.en" placeholder="请输入显示顺序" />
             </el-form-item>
+            <el-form-item label="浏览量" prop="viewNum">
+              <el-input v-model="form.viewNum.en" placeholder="请输入浏览量" />
+            </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="浏览量" prop="viewNum">
-          <el-input v-model="form.viewNum" placeholder="请输入浏览量" />
-        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -165,17 +165,12 @@
 </template>
 
 <script>
-import CategoryCascader from '@/views/alchemy/category/category-cascader.vue'
 import { createItem, updateItem, deleteItem, getItem, getItemPage, exportItemExcel } from "@/api/alchemy/item";
-import {getCategoryPage} from "@/api/alchemy/category";
 import ImageUpload from '@/components/ImageUpload';
 import FileUpload from '@/components/FileUpload';
-import _ from "lodash";
-import Treeselect from "@riophae/vue-treeselect";
-import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import mixin from '@/mixin';
-import {convert2Entity,convert2Vo} from "@/utils/language";
 import ImagePreview from '@/components/ImagePreview/index.vue'
+import CategoryTreeSelect from '@/views/alchemy/category/category-tree-select.vue'
 
 
 
@@ -187,9 +182,7 @@ export default {
     ImagePreview,
     ImageUpload,
     FileUpload,
-    Treeselect,
-    // CategorySelect
-    CategoryCascader
+    CategoryTreeSelect
   },
   data() {
     return {
@@ -225,7 +218,6 @@ export default {
         createTime: [],
         updateBy: null,
       },
-      i18nField:['name','intro','avatar','carousel','content','doc','sort'],
       // 表单参数
       form: {},
       // 表单校验
@@ -241,6 +233,9 @@ export default {
   beforeMount() {
     this.reset()
     this.getList();
+  },
+  mounted() {
+    this.$refs.categoryTreeSelectOfQuery.getTreeselect();
   },
   methods: {
     /** 查询列表 */
@@ -270,7 +265,7 @@ export default {
         content: this.createLanguageStringParameter(),
         doc: this.createLanguageStringParameter(),
         sort: this.createLanguageNumberParameter(),
-        viewNum: 0,
+        viewNum: this.createLanguageNumberParameter(),
       };
       this.resetForm("form");
     },
@@ -286,18 +281,25 @@ export default {
     },
     /** 新增按钮操作 */
     handleAdd() {
+      this.$refs.categoryTreeSelectOfForm.getTreeselect();
       this.reset();
       this.open = true;
       this.title = "添加元素";
+      this.$nextTick(()=>{
+        this.$refs.categoryTreeSelectOfForm.getTreeselect();
+      })
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const id = row.id;
       getItem(id).then(response => {
-        this.form = convert2Vo(response.data,this.i18nField);
+        this.form = response.data;
         this.open = true;
         this.title = "修改元素";
+        this.$nextTick(()=>{
+          this.$refs.categoryTreeSelectOfForm.getTreeselect();
+        })
       });
     },
     /** 提交按钮 */
@@ -308,7 +310,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateItem(convert2Entity(this.form,this.i18nField)).then(response => {
+          updateItem(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -316,7 +318,7 @@ export default {
           return;
         }
         // 添加的提交
-        createItem(convert2Entity(this.form,this.i18nField)).then(response => {
+        createItem(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -348,12 +350,5 @@ export default {
         }).catch(() => {});
     }
   },
-  computed:{
-    realTable(){
-      return this.list.map(item=>{
-        return convert2Vo(item, this.i18nField)
-      })
-    },
-  }
 };
 </script>

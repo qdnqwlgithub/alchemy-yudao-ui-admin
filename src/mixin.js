@@ -19,5 +19,11 @@ export default {
         'en': 0
       }
     },
+    createLanguageBooleanParameter(){
+      return {
+        'zh': false,
+        'en': false
+      }
+    },
   }
 }

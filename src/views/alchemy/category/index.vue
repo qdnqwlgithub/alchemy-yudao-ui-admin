@@ -85,7 +85,7 @@
     <el-dialog :title="title" :visible.sync="open" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="父分类id" prop="parentId">
-          <CategoryCascader v-model="form.parentId"></CategoryCascader>
+          <CategoryTreeSelect ref="categoryTreeSelectOfForm" v-model="form.parentId"></CategoryTreeSelect>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -130,10 +130,8 @@
 import { createCategory, updateCategory, deleteCategory, getCategory, getCategoryPage, exportCategoryExcel } from "@/api/alchemy/category";
 import mixin from '@/mixin';
 import ImageUpload from "@/components/ImageUpload/index.vue";
-import Treeselect from "@riophae/vue-treeselect";
-import "@riophae/vue-treeselect/dist/vue-treeselect.css";
-import CategoryCascader from '@/views/alchemy/category/category-cascader.vue'
 import ImagePreview from '@/components/ImagePreview/index.vue'
+import CategoryTreeSelect from '@/views/alchemy/category/category-tree-select.vue'
 
 
 export default {
@@ -142,12 +140,10 @@ export default {
   components: {
     ImagePreview,
     ImageUpload,
-    Treeselect,
-    CategoryCascader
+    CategoryTreeSelect
   },
   data() {
     return {
-      i18field:['name','intro','avatar','carousel','content','doc','sort'],
       parentCategoryOptions: [],
       // 遮罩层
       loading: true,
@@ -183,6 +179,7 @@ export default {
     };
   },
   beforeMount() {
+    this.
     this.reset();
     this.getList();
   },
@@ -229,6 +226,9 @@ export default {
       this.reset();
       this.open = true;
       this.title = "添加分类";
+      this.$nextTick(()=>{
+        this.$refs.categoryTreeSelectOfForm.getTreeselect();
+      })
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -238,6 +238,9 @@ export default {
         this.form = response.data;
         this.open = true;
         this.title = "修改分类";
+        this.$nextTick(()=>{
+          this.$refs.categoryTreeSelectOfForm.getTreeselect();
+        })
       });
     },
     /** 提交按钮 */
@@ -248,7 +251,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateCategory(convert2Entity(this.form,this.i18field)).then(response => {
+          updateCategory(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -256,7 +259,7 @@ export default {
           return;
         }
         // 添加的提交
-        createCategory(convert2Entity(this.form,this.i18field)).then(response => {
+        createCategory(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();

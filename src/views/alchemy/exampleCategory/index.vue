@@ -43,7 +43,7 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable">
+    <el-table v-loading="loading" :data="list">
       <el-table-column label="案例分类ID" align="center" prop="id" />
       <el-table-column label="案例分类名称" align="center" :prop="'name.'+language" />
       <el-table-column label="显示顺序" align="center" :prop="'sort.'+language" />
@@ -104,7 +104,6 @@
 <script>
 import { createExampleCategory, updateExampleCategory, deleteExampleCategory, getExampleCategory, getExampleCategoryPage, exportExampleCategoryExcel } from "@/api/alchemy/exampleCategory";
 import mixin from '@/mixin';
-import {convert2Entity,convert2Vo} from "@/utils/language";
 
 export default {
   name: "ExampleCategory",
@@ -113,7 +112,6 @@ export default {
   },
   data() {
     return {
-      i18nField:['name','sort'],
       // 遮罩层
       loading: true,
       // 导出遮罩层
@@ -195,7 +193,7 @@ export default {
       this.reset();
       const id = row.id;
       getExampleCategory(id).then(response => {
-        this.form = convert2Vo(response.data,this.i18nField);
+        this.form = response.data;
         this.open = true;
         this.title = "修改案例分类";
       });
@@ -208,7 +206,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExampleCategory(convert2Entity(this.form,this.i18nField)).then(response => {
+          updateExampleCategory(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -216,7 +214,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExampleCategory(convert2Entity(this.form,this.i18nField)).then(response => {
+        createExampleCategory(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -246,13 +244,6 @@ export default {
           this.$download.excel(response, '案例分类.xls');
           this.exportLoading = false;
         }).catch(() => {});
-    }
-  },
-  computed:{
-    realTable(){
-      return this.list.map(item=>{
-        return convert2Vo(item, this.i18nField)
-      })
     }
   }
 };

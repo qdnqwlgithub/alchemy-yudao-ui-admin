@@ -3,9 +3,9 @@
 
     <!-- 搜索工作栏 -->
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="所属分类" prop="categoryId">
-        <ExampleCategorySelect v-model="queryParams.categoryId"></ExampleCategorySelect>
-      </el-form-item>
+<!--      <el-form-item label="所属分类" prop="categoryId">-->
+<!--        <ExampleCategorySelect v-model="queryParams.categoryId"></ExampleCategorySelect>-->
+<!--      </el-form-item>-->
       <el-form-item label="案例名称" prop="name">
         <el-input v-model="queryParams.name" placeholder="请输入案例名称" clearable @keyup.enter.native="handleQuery"/>
       </el-form-item>
@@ -48,7 +48,7 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable">
+    <el-table v-loading="loading" :data="list">
       <el-table-column label="案例ID" align="center" prop="id" />
       <el-table-column label="案例名称" align="center" :prop="'name.'+language" />
       <el-table-column label="所属分类" align="center" prop="categoryId" />
@@ -80,8 +80,7 @@
     <el-dialog :title="title" :visible.sync="open" width="500px" v-dialogDrag append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="所属分类" prop="categoryId">
-<!--          <el-input v-model="form.categoryId" placeholder="请输入所属分类" />-->
-          <example-category-cascader v-model="form.categoryId"></example-category-cascader>
+          <example-category-tree-select ref="treeSelectOfForm" v-model="form.categoryId"></example-category-tree-select>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -104,7 +103,7 @@
           <el-input v-model="form.sort.zh" placeholder="请输入显示顺序" />
         </el-form-item>
         <el-form-item label="是否展示到首页" prop="indexFlag">
-          <el-input v-model="form.indexFlag.zh" placeholder="请输入是否展示到首页" />
+          <el-switch v-model="form.indexFlag.zh"></el-switch>
         </el-form-item>
         <el-form-item label="index排序" prop="indexSort">
           <el-input v-model="form.indexSort.zh" placeholder="请输入index排序" />
@@ -130,7 +129,7 @@
           <el-input v-model="form.sort.en" placeholder="请输入显示顺序" />
         </el-form-item>
         <el-form-item label="是否展示到首页" prop="indexFlag">
-          <el-input v-model="form.indexFlag.en" placeholder="请输入是否展示到首页" />
+          <el-switch v-model="form.indexFlag.en"></el-switch>
         </el-form-item>
         <el-form-item label="index排序" prop="indexSort">
           <el-input v-model="form.indexSort.en" placeholder="请输入index排序" />
@@ -151,19 +150,16 @@
 import { createExample, updateExample, deleteExample, getExample, getExamplePage, exportExampleExcel } from "@/api/alchemy/example";
 import ImageUpload from '@/components/ImageUpload';
 import mixin from '@/mixin';
-import {convert2Entity,convert2Vo} from "@/utils/language";
-import ExampleCategoryCascader from '@/views/alchemy/exampleCategory/example-category-cascader.vue'
-
+import ExampleCategoryTreeSelect from '@/views/alchemy/exampleCategory/example-category-tree-select.vue'
 export default {
   name: "Example",
   mixins: [mixin],
   components: {
     ImageUpload,
-    ExampleCategoryCascader
+    ExampleCategoryTreeSelect
   },
   data() {
     return {
-      i18nField:['name','avatar','carousel','content','sort','indexFlag','indexSort'],
       // 遮罩层
       loading: true,
       // 导出遮罩层
@@ -234,7 +230,7 @@ export default {
         carousel: this.createLanguageStringParameter(),
         content: this.createLanguageStringParameter(),
         sort: this.createLanguageNumberParameter(),
-        indexFlag: this.createLanguageNumberParameter(),
+        indexFlag: this.createLanguageBooleanParameter(),
         indexSort: this.createLanguageNumberParameter(),
       };
       this.resetForm("form");
@@ -254,6 +250,9 @@ export default {
       this.reset();
       this.open = true;
       this.title = "添加案例";
+      this.$nextTick(()=>{
+        this.$refs.treeSelectOfForm.getTreeselect();
+      })
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -263,6 +262,9 @@ export default {
         this.form = response.data;
         this.open = true;
         this.title = "修改案例";
+        this.$nextTick(()=>{
+          this.$refs.treeSelectOfForm.getTreeselect();
+        })
       });
     },
     /** 提交按钮 */
@@ -273,7 +275,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateExample(convert2Entity(this.form,this.i18nField)).then(response => {
+          updateExample(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -281,7 +283,7 @@ export default {
           return;
         }
         // 添加的提交
-        createExample(convert2Entity(this.form,this.i18nField)).then(response => {
+        createExample(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -313,15 +315,5 @@ export default {
         }).catch(() => {});
     }
   },
-  computed:{
-    realTable(){
-      return this.list.map(item=>{
-        return convert2Vo(item, this.i18nField)
-      })
-    }
-  },
-  components:{
-    ExampleCategorySelect
-  }
 };
 </script>

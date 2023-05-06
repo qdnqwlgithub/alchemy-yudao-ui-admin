@@ -61,15 +61,23 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="realTable">
+    <el-table v-loading="loading" :data="list">
       <el-table-column label="小程序配置ID" align="center" prop="id" />
-      <el-table-column label="小程序顶部logo" align="center" :prop="'headImg.'+language" />
+      <el-table-column label="小程序顶部logo" align="center" :prop="'headImg.'+language">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.headImg[language]"></image-preview>
+        </template>
+      </el-table-column>
       <el-table-column label="轮播图地址" align="center" >
         <template v-slot="scope">
           <image-preview :src="scope.row.carousel[language]"></image-preview>
         </template>
       </el-table-column>
-      <el-table-column label="index页面底部图片" align="center" :prop="'indexBottomImg.'+language" />
+      <el-table-column label="index页面底部图片" align="center" :prop="'indexBottomImg.'+language">
+        <template v-slot="scope">
+          <image-preview :src="scope.row.indexBottomImg[language]"></image-preview>
+        </template>
+      </el-table-column>
       <el-table-column label="公司名" align="center" :prop="'companyName.'+language" />
       <el-table-column label="公司地址" align="center" :prop="'address.'+language" />
       <el-table-column label="电话号码" align="center" :prop="'phoneNumber.'+language" />
@@ -102,15 +110,13 @@
               <el-tag type="danger">中文</el-tag>
             </el-form-item>
             <el-form-item label="小程序顶部logo" prop="headImg">
-<!--              <el-input v-model="form.headImg.zh" placeholder="请输入小程序顶部logo" />-->
-<!--              <image-upload v-model=""></image-upload>-->
               <image-upload v-model="form.headImg.zh" :limit="1"/>
             </el-form-item>
             <el-form-item label="轮播图地址" prop="carousel">
-              <el-input v-model="form.carousel.zh" placeholder="请输入轮播图地址" />
+              <image-upload v-model="form.carousel.zh"/>
             </el-form-item>
             <el-form-item label="index页面底部图片" prop="indexBottomImg">
-              <el-input v-model="form.indexBottomImg.zh" placeholder="请输入index页面底部图片" />
+              <image-upload v-model="form.indexBottomImg.zh"/>
             </el-form-item>
             <el-form-item label="公司名" prop="companyName">
               <el-input v-model="form.companyName.zh" placeholder="请输入公司名" />
@@ -133,14 +139,13 @@
             <el-tag>英文</el-tag>
           </el-form-item>
             <el-form-item label="小程序顶部logo" prop="headImg">
-<!--              <el-input v-model="form.headImg.en" placeholder="请输入小程序顶部logo" />-->
               <image-upload v-model="form.headImg.en" :limit="1"/>
             </el-form-item>
             <el-form-item label="轮播图地址" prop="carousel">
-              <el-input v-model="form.carousel.en" placeholder="请输入轮播图地址" />
+              <image-upload v-model="form.carousel.en"/>
             </el-form-item>
             <el-form-item label="index页面底部图片" prop="indexBottomImg">
-              <el-input v-model="form.indexBottomImg.en" placeholder="请输入index页面底部图片" />
+              <image-upload v-model="form.indexBottomImg.en"/>
             </el-form-item>
             <el-form-item label="公司名" prop="companyName">
               <el-input v-model="form.companyName.en" placeholder="请输入公司名" />
@@ -198,7 +203,6 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-      i18nField: ['headImg','carousel','indexBottomImg','companyName','address','phoneNumber','email','position'],
       // 查询参数
       queryParams: {
         pageNo: 1,
@@ -304,7 +308,7 @@ export default {
         }
         // 修改的提交
         if (this.form.id != null) {
-          updateMiniAppConfig(convert2Entity(this.form,this.i18nField)).then(response => {
+          updateMiniAppConfig(this.form).then(response => {
             this.$modal.msgSuccess("修改成功");
             this.open = false;
             this.getList();
@@ -312,7 +316,7 @@ export default {
           return;
         }
         // 添加的提交
-        createMiniAppConfig(convert2Entity(this.form,this.i18nField)).then(response => {
+        createMiniAppConfig(this.form).then(response => {
           this.$modal.msgSuccess("新增成功");
           this.open = false;
           this.getList();
@@ -343,13 +347,6 @@ export default {
           this.exportLoading = false;
         }).catch(() => {});
     }
-  },
-  computed:{
-    realTable(){
-      return this.list.map(item=>{
-        return convert2Vo(item, this.i18nField)
-      })
-    },
   }
 
 };
